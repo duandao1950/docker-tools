@@ -1,0 +1,40 @@
+#!/bin/bash
+###################
+# tail docker log
+#################
+
+cloudName=$1
+tailLine=$2
+
+if [[ ! $tailLine ]]; then
+   tailLine=50
+fi
+
+printf "the cloudName %s, the tailLine %s\n" $cloudName $tailLine
+
+cId=`docker ps -a | grep -E "${cloudName}" | grep -E "Up" | awk '{print $1}'`
+
+printf "the container id %s\n" ${cId}
+
+if [[ ! $cId ]]; then
+   mId=`docker images | grep -E "${cloudName}" | awk '{print $3}'`
+   if [[ ! $mId ]]; then
+      printf "the container not exist\n"
+      exit 1
+   fi
+   printf "the image id %s\n" ${mId}
+   cId=`docker ps -a | grep -E "${mId}" | grep -E "Up" | awk '{print $1}'`
+   printf "the container id %s\n" ${cId}
+fi
+
+if [[ ! $cId || $cId = "CONTAINER" ]]; then
+   printf "the container not exist\n"
+   exit 1
+fi
+
+printf "the container id %s\n" $cId
+
+docker logs -f -t --tail $tailLine $cId
+
+
+
