@@ -1,0 +1,91 @@
+#!/bin/bash
+###################
+#deploy docker container
+###################
+
+branch=$1
+cloudShortName=$2
+port=$3
+cloudName="www-ebiz-"${cloudShortName}
+webCloudName="www-${cloudShortName}-web"
+if [[ ${cloudShortName} = "api" ]]; then
+  cloudName="www-app-api"
+  webCloudName="www-app-web"
+fi
+
+cd /code/${branch}/${cloudName}
+
+printf "the path: %s\n" $PWD
+
+##############clean package cloud application###################
+
+mvn clean package -DskipTests=true
+
+##############mkdir docker file ###################
+
+dockerfileDir="/dockerfiles/"${cloudShortName}
+
+printf "mkdir docker file %s\n" ${dockerfileDir}
+
+if [ ! -d ${dockerfileDir} ];then
+  mkdir ${dockerfileDir}
+fi
+
+cd ${dockerfileDir}
+
+dockerfile=${dockerfileDir}"/dockerfile"
+
+if [ ! -f ${dockerfile} ];then
+  touch "${dockerfile}"
+  echo "FROM hub.c.163.com/library/java:8">>"${dockerfile}"
+  echo "MAINTAINER ${cloudName}">>"${dockerfile}"
+  echo "COPY ${webCloudName}.jar /${cloudShortName}.jar">>"${dockerfile}"
+  echo "CMD java -jar /${cloudShortName}.jar">>"${dockerfile}"
+  echo "EXPOSE ${port}">>"${dockerfile}"
+  debugPort=`expr ${port} + 1000`
+  echo "EXPOSE ${debugPort}">>"${dockerfile}"
+  # echo "CMD [\"java\",\"-jar\",\"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${debugPort}\",\"-Dspring.profiles.active=test\",\"${cloudShortName}.jar\"]"
+  echo "CMD [\"java\",\"-jar\",\"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${debugPort}\",\"${cloudShortName}.jar\"]">>"${dockerfile}"
+fi
+
+cat ${dockerfile}
+
+time=$(date "+%Y%m%d-%H%M%S")
+
+##############backup jar ###################
+mv ${webCloudName}.jar ${webCloudName}-${time}.jar
+
+##############delete other container and images ###################
+docker ps -a | grep -E "Exited|Created|${cloudName}|${port}" | awk '{print $1}' | xargs docker stop
+docker ps -a | grep -E "Exited|Created|${cloudName}|${port}" | awk '{print $1}' | xargs docker rm
+docker images | grep -E "none|${cloudShortName}" | awk '{print $3}'| xargs docker rmi
+
+codePath="/code/${branch}/${cloudName}/${webCloudName}"
+cp ${codePath}/target/${webCloudName}.jar ${webCloudName}.jar
+
+docker build -t ${cloudName} .
+
+##############run cloud docker ###################
+
+docker run -d -p ${port}:${port} ${cloudName}
+
+docker ps -a
+
+printf "#################################################"
+
+applicationPath="${codePath}/src/main/resources"
+cat ${applicationPath}/application.yml
+printf "\n"
+printf "#################################################"
+
+cat ${applicationPath}/application-dev.yml
+printf "\n"
+printf "#################################################"
+
+cat ${applicationPath}/application-test.yml
+printf "\n"
+
+sleep 5
+
+exit
+
