@@ -4,16 +4,16 @@
 ###################
 
 branch=$1
-cloudShortName=$2
+cloud_short_name=$2
 port=$3
-cloudName="www-ebiz-"${cloudShortName}
-webCloudName="www-${cloudShortName}-web"
-if [[ ${cloudShortName} = "api" ]]; then
-  cloudName="www-app-api"
-  webCloudName="www-app-web"
+cloud_name="mamahao-ebiz-"${cloud_short_name}
+web_cloud_name="mamahao-${cloud_short_name}-web"
+if [[ ${cloud_short_name} = "api" ]]; then
+  cloud_name="mamahao-app-api"
+  web_cloud_name="mamahao-app-web"
 fi
 
-cd /code/${branch}/${cloudName}
+cd /code/${branch}/${cloud_name}
 
 printf "the path: %s\n" $PWD
 
@@ -23,29 +23,29 @@ mvn clean package -DskipTests=true
 
 ##############mkdir docker file ###################
 
-dockerfileDir="/dockerfiles/"${cloudShortName}
+dockerfile_dir="/dockerfiles/"${cloud_short_name}
 
-printf "mkdir docker file %s\n" ${dockerfileDir}
+printf "mkdir docker file %s\n" ${dockerfile_dir}
 
-if [ ! -d ${dockerfileDir} ];then
-  mkdir ${dockerfileDir}
+if [ ! -d ${dockerfile_dir} ];then
+  mkdir ${dockerfile_dir}
 fi
 
-cd ${dockerfileDir}
+cd ${dockerfile_dir}
 
-dockerfile=${dockerfileDir}"/dockerfile"
+dockerfile=${dockerfile_dir}"/dockerfile"
 
 if [ ! -f ${dockerfile} ];then
   touch "${dockerfile}"
   echo "FROM hub.c.163.com/library/java:8">>"${dockerfile}"
-  echo "MAINTAINER ${cloudName}">>"${dockerfile}"
-  echo "COPY ${webCloudName}.jar /${cloudShortName}.jar">>"${dockerfile}"
-  echo "CMD java -jar /${cloudShortName}.jar">>"${dockerfile}"
+  echo "MAINTAINER ${cloud_name}">>"${dockerfile}"
+  echo "COPY ${web_cloud_name}.jar /${cloud_short_name}.jar">>"${dockerfile}"
+  echo "CMD java -jar /${cloud_short_name}.jar">>"${dockerfile}"
   echo "EXPOSE ${port}">>"${dockerfile}"
   debugPort=`expr ${port} + 1000`
   echo "EXPOSE ${debugPort}">>"${dockerfile}"
-  # echo "CMD [\"java\",\"-jar\",\"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${debugPort}\",\"-Dspring.profiles.active=test\",\"${cloudShortName}.jar\"]"
-  echo "CMD [\"java\",\"-jar\",\"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${debugPort}\",\"${cloudShortName}.jar\"]">>"${dockerfile}"
+  # echo "CMD [\"java\",\"-jar\",\"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${debugPort}\",\"-Dspring.profiles.active=test\",\"${cloud_short_name}.jar\"]"
+  echo "CMD [\"java\",\"-jar\",\"-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=${debugPort}\",\"${cloud_short_name}.jar\"]">>"${dockerfile}"
 fi
 
 cat ${dockerfile}
@@ -53,36 +53,36 @@ cat ${dockerfile}
 time=$(date "+%Y%m%d-%H%M%S")
 
 ##############backup jar ###################
-mv ${webCloudName}.jar ${webCloudName}-${time}.jar
+mv ${web_cloud_name}.jar ${web_cloud_name}-${time}.jar
 
 ##############delete other container and images ###################
-docker ps -a | grep -E "Exited|Created|${cloudName}|${port}" | awk '{print $1}' | xargs docker stop
-docker ps -a | grep -E "Exited|Created|${cloudName}|${port}" | awk '{print $1}' | xargs docker rm
-docker images | grep -E "none|${cloudShortName}" | awk '{print $3}'| xargs docker rmi
+docker ps -a | grep -E "Exited|Created|${cloud_name}|${port}" | awk '{print $1}' | xargs docker stop
+docker ps -a | grep -E "Exited|Created|${cloud_name}|${port}" | awk '{print $1}' | xargs docker rm
+docker images | grep -E "none|${cloud_short_name}" | awk '{print $3}'| xargs docker rmi
 
-codePath="/code/${branch}/${cloudName}/${webCloudName}"
-cp ${codePath}/target/${webCloudName}.jar ${webCloudName}.jar
+code_path="/code/${branch}/${cloud_name}/${web_cloud_name}"
+cp ${code_path}/target/${web_cloud_name}.jar ${web_cloud_name}.jar
 
-docker build -t ${cloudName} .
+docker build -t ${cloud_name} .
 
 ##############run cloud docker ###################
 
-docker run -d -p ${port}:${port} ${cloudName}
+docker run -d -p ${port}:${port} ${cloud_name}
 
 docker ps -a
 
 printf "#################################################"
 
-applicationPath="${codePath}/src/main/resources"
-cat ${applicationPath}/application.yml
+application_path="${code_path}/src/main/resources"
+cat ${application_path}/application.yml
 printf "\n"
 printf "#################################################"
 
-cat ${applicationPath}/application-dev.yml
+cat ${application_path}/application-dev.yml
 printf "\n"
 printf "#################################################"
 
-cat ${applicationPath}/application-test.yml
+cat ${application_path}/application-test.yml
 printf "\n"
 
 sleep 5
