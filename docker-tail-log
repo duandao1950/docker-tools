@@ -3,38 +3,38 @@
 # tail docker log
 #################
 
-cloudName=$1
-tailLine=$2
+cloud_name=$1
+tail_line=$2
 
-if [[ ! $tailLine ]]; then
-   tailLine=50
+if [[ ! $tail_line ]]; then
+   tail_line=50
 fi
 
-printf "the cloudName %s, the tailLine %s\n" $cloudName $tailLine
+printf "the cloud_name %s, the tail_line %s\n" $cloud_name $tail_line
 
-cId=`docker ps -a | grep -E "${cloudName}" | grep -E "Up" | awk '{print $1}'`
+c_id=`docker ps -a | grep -E "${cloud_name}" | grep -E "Up" | awk '{print $1}'`
 
-printf "the container id %s\n" ${cId}
+printf "the container id %s\n" ${c_id}
 
-if [[ ! $cId ]]; then
-   mId=`docker images | grep -E "${cloudName}" | awk '{print $3}'`
-   if [[ ! $mId ]]; then
+if [[ ! $c_id ]]; then
+   m_id=`docker images | grep -E "${cloud_name}" | awk '{print $3}'`
+   if [[ ! $m_id ]]; then
       printf "the container not exist\n"
       exit 1
    fi
-   printf "the image id %s\n" ${mId}
-   cId=`docker ps -a | grep -E "${mId}" | grep -E "Up" | awk '{print $1}'`
-   printf "the container id %s\n" ${cId}
+   printf "the image id %s\n" ${m_id}
+   c_id=`docker ps -a | grep -E "${m_id}" | grep -E "Up" | awk '{print $1}'`
+   printf "the container id %s\n" ${c_id}
 fi
 
-if [[ ! $cId || $cId = "CONTAINER" ]]; then
+if [[ ! $c_id || $c_id = "CONTAINER" ]]; then
    printf "the container not exist\n"
    exit 1
 fi
 
-printf "the container id %s\n" $cId
+printf "the container id %s\n" $c_id
 
-docker logs -f -t --tail $tailLine $cId
+docker logs -f -t --tail $tail_line $c_id
 
 
 
