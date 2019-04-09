@@ -14,7 +14,7 @@ printf "the cloud_name %s, the tail_line %s\n" $cloud_name $tail_line
 
 c_id=`docker ps -a | grep -E "${cloud_name}" | grep -E "Up" | awk '{print $1}'`
 
-printf "the container id %s\n" ${c_id}
+printf "the container id %s\n" $c_id
 
 if [[ ! $c_id ]]; then
    m_id=`docker images | grep -E "${cloud_name}" | awk '{print $3}'`
@@ -22,9 +22,9 @@ if [[ ! $c_id ]]; then
       printf "the container not exist\n"
       exit 1
    fi
-   printf "the image id %s\n" ${m_id}
+   printf "the image id %s\n" $m_id
    c_id=`docker ps -a | grep -E "${m_id}" | grep -E "Up" | awk '{print $1}'`
-   printf "the container id %s\n" ${c_id}
+   printf "the container id %s\n" $c_id
 fi
 
 if [[ ! $c_id || $c_id = "CONTAINER" ]]; then
